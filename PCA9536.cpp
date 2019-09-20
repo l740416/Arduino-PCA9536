@@ -10,6 +10,13 @@
 #define POLARITY_REG 0x02
 #define CONFIG_REG   0x03
 
+PCA9536::PCA9536()
+{
+  m_state.output    = 0xFF;
+  m_state.input     = 0xFF;
+  m_state.direction = 0xFF;
+  m_state.polarity  = 0x00;
+}
 
 #if defined(ARDUINO_ARCH_ESP8266)
 void PCA9536::begin(int SDA_pin, int SCL_pin) {
@@ -20,6 +27,18 @@ bool PCA9536::begin() {
 #endif
 }
 
+bool PCA9536::init()
+{
+  if (exist() == true)
+  {
+    polarity(m_state.polarity);
+    direction(m_state.direction);
+    output(m_state.output);
+    return true;
+  }
+  return false;
+}
+
 bool PCA9536::exist() 
 {
     Wire.beginTransmission(address);
@@ -27,6 +46,55 @@ bool PCA9536::exist()
         return true;
     }
     return false;
+}
+
+void PCA9536::pinMode(uint8_t pin, uint8_t direct)
+{
+  if (pin < 4)
+  {
+    uint8_t mask = 1 << pin;
+    if (direct == OUTPUT)
+    {
+      m_state.direction &= (~mask);
+    }
+    else if (direct == INPUT)
+    {
+      m_state.direction |= (mask);
+    }
+    
+    direction(m_state.direction);
+  }
+}
+void PCA9536::digitalWrite(uint8_t pin, uint8_t level)
+{
+  if (pin < 4)
+  {
+    uint8_t mask = 1 << pin;
+    if (level == LOW)
+    {
+      m_state.output &= (~mask);
+    }
+    else if (level == HIGH)
+    {
+      m_state.output |= (mask);
+    }
+    
+    output(m_state.output);
+  }
+}
+
+uint8_t PCA9536::digitalRead(uint8_t pin)
+{
+  if (pin < 4)
+  {
+    uint8_t mask = 1 << pin;
+    uint8_t v = input();
+    if (v & mask)
+    {
+      return HIGH;
+    }
+  }
+  return LOW;
 }
 
 uint8_t PCA9536::input() {
